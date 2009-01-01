@@ -4,9 +4,8 @@ if (empty($_GET['link'])) {
 	exit(0);
 	}
 	
-// query the database	
+// get the database	
 include ('../../../wp-config.php');	
-
 
 
 
@@ -14,22 +13,31 @@ $table_name = $wpdb->prefix."clik_stats";
 
 
 
+// generate the link info
+$url = $_GET['link'];
+
+// add any additional arguments
+foreach ($_GET as $key=>$val) $url.= $key!=='link' ? '&'.$key.'='.$val : '' ;
+
+
+
 	
 $SQL = "INSERT INTO ".$table_name." (";
 $SQL.= "url, ip";
 $SQL.= ") VALUES (";
-$SQL.= "'".addslashes($_GET['link'])."',";
+$SQL.= "'".addslashes($url)."',";
 $SQL.= "'".$_SERVER['REMOTE_ADDR']."'";
 $SQL.= ")";
 
 //echo $SQL;
 
+
 // Perform update
 $wpdb->query($SQL);	
 	
-// do the link redirect
-$location = $_GET['link'];
-header ('Location: '.$location);	
+	
+
+header ('Location: '.$url);	
 	
 	
 ?>	
