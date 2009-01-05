@@ -2,9 +2,9 @@
 Contributors: codejunkie
 Donate link: adriancallaghan.co.uk/clikStats/
 Tags: links, log, url, capture, clicks, stats, records, anchor, vistors, counter, retrofit
-Requires at least: 2.6
-Tested up to: 2.6
-Stable tag: 0.2
+Requires at least: 2.5
+Tested up to: 2.7
+Stable tag: 0.3
 
 clikStats is retrofitable pluggin that automatically logs the number of clicks within every post.
 
@@ -17,6 +17,7 @@ ClikStats is retrofitable, and requires no special provision from any classes or
 Once activated, clikStats will compile who, when, what data which can be viewed through the back office.
 
 The beauty of this plugin is in its portability, it can be used straight out of the box, and provide usefull visitor information, without the need to reverse engineer your posts.
+
 
 == Installation ==
 
