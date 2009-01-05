@@ -3,7 +3,7 @@
 Plugin Name: Clik stats
 Plugin URI: http://adriancallaghan.co.uk/clikStats/
 Description: This plugin records the amount of anchor point clicks within the blog, and provides who, when, what information.
-Version: 0.3
+Version: 0.4
 Author: Adrian Callaghan
 Author URI: http://adriancallaghan.co.uk
 */
@@ -43,7 +43,7 @@ add_filter('the_content','counter');
 
 function counter ($text){
 	
-	$processor_file = get_option('siteurl')."/wp-content/plugins/clik_stats/record.php";
+	$processor_file = get_option('siteurl')."/wp-content/plugins/clikstats/record.php";
 	$text = str_replace('<a href="', '<a href="'.$processor_file.'?link=', $text);
 	
 	return $text;
