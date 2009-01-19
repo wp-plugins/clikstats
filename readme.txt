@@ -1,7 +1,7 @@
 === Plugin Name ===
 Contributors: codejunkie
 Donate link: adriancallaghan.co.uk/clikStats/
-Tags: links, log, url, capture, clicks, stats, records, anchor, vistors, counter, retrofit
+Tags: seo, links, log, url, capture, clicks, stats, records, anchor, vistors, counter, retrofit
 Requires at least: 2.5
 Tested up to: 2.7
 Stable tag: 0.5
