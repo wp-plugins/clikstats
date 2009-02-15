@@ -19,17 +19,17 @@ function notFoundClik(){
 
 // click to timeline thet handles date
 function addDateAnchor($date){
-	echo '<a href="'.$_SERVER['PHP_SELF'].'?page=show&date='.date($date).'" class="info">'.$date.'</a>';
+	echo '<a href="'.$_SERVER['PHP_SELF'].'?page=show&request=date&val='.date($date).'" class="info">'.$date.'</a>';
 	}
 
 // click to timeline that handles ip		
 function addIpAnchor($ip){
-	echo '<a href="'.$_SERVER['PHP_SELF'].'?page=show&ip='.$ip.'" class="info">'.$ip.'</a>';
+	echo '<a href="'.$_SERVER['PHP_SELF'].'?page=show&request=ip&val='.$ip.'" class="info">'.$ip.'</a>';
 	}
 
 // click to timeline that handles url		
 function addUrlAnchor($url){
-	echo '<a href="'.$_SERVER['PHP_SELF'].'?page=show&url='.$url.'" class="info">'.$url.'</a>';
+	echo '<a href="'.$_SERVER['PHP_SELF'].'?page=show&request=url&val='.$url.'" class="info">'.$url.'</a>';
 	}
 
 	
@@ -42,7 +42,7 @@ function pagenateMonthYearPreProccessor(){
 	return array('month'=>$month,'year'=>$year,'argument'=>mysql_real_escape_string($_GET['date_sel']));
 	}
 	
-function pagenate($array, $limit_per_page, $queryString, $rules=0, $date_sel=0) {
+function pagenate($array, $limit_per_page, $queryString, $rules=0, $date_sel=0, $range=0) {
 	
 	// wordpress resources
 	global $ck_domain;
@@ -63,6 +63,9 @@ function pagenate($array, $limit_per_page, $queryString, $rules=0, $date_sel=0) 
 	
 	$date_sel = if date_sel contains a value in the format MM-YYYY the dropdown becomes available
 				it selects the date based on the value, (populated from information from $tablename)
+	
+	
+	$range = 	the scope of the pagenation displayed
 	
 	*/
 	
@@ -89,7 +92,7 @@ function pagenate($array, $limit_per_page, $queryString, $rules=0, $date_sel=0) 
 	$start = $listing * $limit;
 
 	$all = count($result);
-	$all_pages = ceil($all / $limit);
+	$all_pages = ceil($all/$limit);
 	
 	// this forwards any criteria associated with the search by adding it onto the end of the hyperlink
 	$args="";
@@ -100,10 +103,20 @@ function pagenate($array, $limit_per_page, $queryString, $rules=0, $date_sel=0) 
 		if(($listing+1) > $all_pages){$listing=0;}
 		$of = 0;
 		
-		////////////////////////////////////////// navigation starts ?>
+	////////////////////////////////////////// navigation starts ?>
+	<?php
+	
+	// below shows where in the pagination the results are
+	
+	$current_loc 	= ($listing+1)*$limit_per_page;
+	if ($current_loc>$all) $current_loc=$all;
+	
+	$previous_loc = $listing*$limit_per_page;
+	
+	?>
+	<h2 style="float:right; margin:0; padding:0; font-size:12px;"><?php echo 'Displaying '.$previous_loc.'-'.$current_loc.' of '.$all; ?></h2>
 	<form method="post" action="">
 		<div class="tablenav">
-		
 			<div class="alignleft">
 				<?php if (array_key_exists($del_key, $array[0])) { ?>
 					<input value="Delete" class="button-secondary delete" type="submit">
@@ -133,34 +146,43 @@ function pagenate($array, $limit_per_page, $queryString, $rules=0, $date_sel=0) 
 						<input id="post-query-submit" value="Filter" class="button-secondary" type="submit">
 					<?php } ?>
 				<?php } ?>	
-				
 			</div>
 
 			<div class='tablenav-pages'>		
 				<?php
-				
-				
+								
 				if(($listing+1) > 1 && ($listing+1) <= $all_pages){
 					// up
-					echo '<a class="prev page-numbers" href="'.$pagelink.'?'.$queryString.'='.($listing-1).$args.'" title="previous" alt="previous">&laquo; '.__('Previous',$ck_domain).'</a>';
+					echo '<a class="prev page-numbers" href="'.$pagelink.'?'.$queryString.'='.($listing-1).$args.'" title="previous" alt="previous">&laquo;</a>';
 					}
-
+	
+				
 				if ($all_pages>1){
-					// goto page
-					for($i=0;$i<$all_pages;$i++){
+									
+					$startpoint	= $listing-$range>0 ? $listing-$range : 0;
+					$endpoint 	= $listing+$range<$all_pages ? $listing+$range+1: $all_pages;
+					
+					// if range is set to zero, it does not set a range, I.E it prints out as normal
+					if ($range==0) {$endpoint=$all_pages;$startpoint=0;}
+					
+					// holds the min page tab number that will display the first page tab 
+					elseif ($startpoint>0) echo '<a href="'.$pagelink.'?'.$queryString.'=0'.$args.'" class="page-numbers" title="page '.($all_pages).'" alt="page '.($all_pages).'">'.__('First',$ck_domain).'</a>  ... ';
 
+					// goto page
+					for($i=$startpoint;$i<$endpoint;$i++){
 						// echo`s the number also checks to see if this is the current page
 						echo $listing==$i ? '<span class="page-numbers current">'.($i+1).'</span>' : '<a href="'.$pagelink.'?'.$queryString.'='.$i.$args.'" class="page-numbers" title="page '.($i+1).'" alt="page '.($i+1).'">'.($i+1).'</a>';
 						}
+					// holds the min page tab number that will display the last page tab 
+					if ($endpoint<$all_pages) echo ' ... <a href="'.$pagelink.'?'.$queryString.'='.($all_pages-1).$args.'" class="page-numbers" title="page '.($all_pages).'" alt="page '.($all_pages).'">'.__('Last',$ck_domain).'</a>';
 					}
 
 				if(($listing+1) < $all_pages){
 					// down
-					echo ' <a href="'.$pagelink.'?'.$queryString.'='.($listing+1).$args.'" class="next page-numbers" title="next" alt="next">'.__('Next',$ck_domain).' &raquo;</a>';
+					echo ' <a href="'.$pagelink.'?'.$queryString.'='.($listing+1).$args.'" class="next page-numbers" title="next" alt="next">&raquo;</a>';
 					}
 
 				?>
-				
 			</div>
 
 			<br class="clear">
@@ -185,23 +207,28 @@ function pagenate($array, $limit_per_page, $queryString, $rules=0, $date_sel=0) 
 					<?php 
 			
 					foreach ($result[$i] as $key=>$data) {
-													
+							
+						if ($i%2) $class='alternate';
+						else $class='';
+							
 						// check to see if the rule exists, which is defined by its key name
 						if (is_array($rules) && array_key_exists($key, $rules)){
 							// if it is maintain layout and call function
 							
-							echo '<td class="tableContents" valign="top">';
+							echo '<td class="tableContents '.$class.'" valign="top">';
 							call_user_func($rules[$key], stripslashes($data));
 							echo '</td>';
 							}
 							
-						elseif ($key==$del_key){ ?>
-							<th scope="row" class="check-column">
+						elseif ($key==$del_key){ 
+							
+							?>
+							<th scope="row" class="check-column <?php echo $class; ?>">
 								<input name="delete[]" value="<?php echo $result[$i][$del_key];?>" type="checkbox">
 							</th>
 						<?php }
 
-						else echo '<td class="tableContents" valign="top">'.stripslashes($data).'</td>'; 
+						else echo '<td class="tableContents '.$class.'" valign="top">'.stripslashes($data).'</td>'; 
 						}
 					?>
 				</tr>
@@ -212,7 +239,6 @@ function pagenate($array, $limit_per_page, $queryString, $rules=0, $date_sel=0) 
 		<?php ////////////////////////////////////////// navigation starts ?>
 					
 			<div class="tablenav">
-				
 				<?php
 				if (array_key_exists($del_key, $array[0])) {?>
 					<div class="alignleft">
@@ -221,32 +247,42 @@ function pagenate($array, $limit_per_page, $queryString, $rules=0, $date_sel=0) 
 				<?php } ?>
 			
 				<div class='tablenav-pages'>
-							
 					<?php
 					
 					
 					if(($listing+1) > 1 && ($listing+1) <= $all_pages){
 						// up
-						echo '<a class="prev page-numbers" href="'.$pagelink.'?'.$queryString.'='.($listing-1).$args.'" title="previous" alt="previous">&laquo; '.__('Previous',$ck_domain).'</a>';
+						echo '<a class="prev page-numbers" href="'.$pagelink.'?'.$queryString.'='.($listing-1).$args.'" title="previous" alt="previous">&laquo;</a>';
 						}
-
+		
+					
 					if ($all_pages>1){
-						// goto page
-						for($i=0;$i<$all_pages;$i++){
 
+						
+						$startpoint	= $listing-$range>0 ? $listing-$range : 0;
+						$endpoint 	= $listing+$range<$all_pages ? $listing+$range+1: $all_pages;
+						
+						// if range is set to zero, it does not set a range, I.E it prints out as normal
+						if ($range==0) {$endpoint=$all_pages;$startpoint=0;}
+						
+						// holds the min page tab number that will display the first page tab 
+						elseif ($startpoint>0) echo '<a href="'.$pagelink.'?'.$queryString.'=0'.$args.'" class="page-numbers" title="page '.($all_pages).'" alt="page '.($all_pages).'">'.__('First',$ck_domain).'</a>  ... ';
+						
+						// goto page
+						for($i=$startpoint;$i<$endpoint;$i++){
 							// echo`s the number also checks to see if this is the current page
 							echo $listing==$i ? '<span class="page-numbers current">'.($i+1).'</span>' : '<a href="'.$pagelink.'?'.$queryString.'='.$i.$args.'" class="page-numbers" title="page '.($i+1).'" alt="page '.($i+1).'">'.($i+1).'</a>';
-							//if($i < ($all_pages-1)) echo ' | ';
 							}
+						// holds the min page tab number that will display the last page tab 
+						if ($endpoint<$all_pages) echo ' ... <a href="'.$pagelink.'?'.$queryString.'='.($all_pages-1).$args.'" class="page-numbers" title="page '.($all_pages).'" alt="page '.($all_pages).'">'.__('Last',$ck_domain).'</a>';
 						}
 
 					if(($listing+1) < $all_pages){
 						// down
-						echo ' <a href="'.$pagelink.'?'.$queryString.'='.($listing+1).$args.'" class="next page-numbers" title="next" alt="next">'.__('Next',$ck_domain).' &raquo;</a>';
+						echo ' <a href="'.$pagelink.'?'.$queryString.'='.($listing+1).$args.'" class="next page-numbers" title="next" alt="next">&raquo;</a>';
 						}
 
-					?>
-					
+					?>	
 				</div>
 
 				<br class="clear">

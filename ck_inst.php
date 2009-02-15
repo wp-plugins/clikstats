@@ -39,6 +39,7 @@ function ckStat_install () {
 	add_option('clikStats_top', 3);
 	add_option('clikStats_last', 1);
 	add_option('clikStats_enviroment', '');
+	add_option('ClikStats_pScope', 3);
 	
 	
 	// update the option if it is inaccurate, future proofs too!!

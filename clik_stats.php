@@ -3,12 +3,12 @@
 Plugin Name: Clik stats
 Plugin URI: http://adriancallaghan.co.uk/clikStats/
 Description: This plugin records the amount of anchor point clicks within the blog, and provides who, when, what information.
-Version: 0.5
+Version: 0.6
 Author: Adrian Callaghan
 Author URI: http://adriancallaghan.co.uk
 */
 
-/*  Copyright 2008  Adrian Callaghan  (email : admin@adriancallaghan.co.uk)
+/*  Copyright 2009  Adrian Callaghan  (email : admin@adriancallaghan.co.uk)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
