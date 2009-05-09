@@ -25,7 +25,7 @@ $post_id = intval($_GET['Ck_id']); // supposed source of the link
 /////////////// Some info about whats happening ///////////////////////
 
 // get the supposed origin content, that SHOULD contain the link
-$SQL = 'SELECT post_content FROM `wp_posts` WHERE id='.$post_id;
+$SQL = 'SELECT post_content FROM `'.$wpdb->prefix.'posts` WHERE id='.$post_id;
 $post = $wpdb->get_results($SQL, ARRAY_A); 
 
 // reassemble the url (reserved querys must be removed from the url assembly)

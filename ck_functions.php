@@ -32,6 +32,19 @@ function addUrlAnchor($url){
 	echo '<a href="'.$_SERVER['PHP_SELF'].'?page=show&request=url&val='.$url.'" class="info">'.$url.'</a>';
 	}
 
+// click to timeline that handles source (also resolves source by post_id)
+function addSourceAnchor($postId){
+	global $wpdb;
+	
+	echo '<a href="'.$_SERVER['PHP_SELF'].'?page=show&request=source&val='.$postId.'" class="info">';
+	
+	$SQL = 'SELECT * FROM `'.$wpdb->prefix.'posts` WHERE id='.intval($postId);
+	list($post) = $wpdb->get_results($SQL, ARRAY_A);
+
+	echo $post['post_name'];
+	echo '</a><br />'.$post['post_type'];
+	
+	}
 	
 function pagenateMonthYearPreProccessor(){
 	// returns an assoc array containing the date selection in the correct format for pagenate
@@ -79,42 +92,53 @@ function pagenate($array, $limit_per_page, $queryString, $rules=0, $date_sel=0, 
 	// output
 	
 	// catch bad thangs
-	if (intval($limit_per_page)<1 || empty($array)) return;
+	if (intval($limit_per_page)<1 || empty($array)) {
 		
-	// pagination internal settings
-	$result = $array;
-	$limit = intval($limit_per_page);
-	$pagelink = $_SERVER['PHP_SELF']; 
+		// have allowed it to continue on to a cut off point
+		// the idea is that it will still display the heading and options, and then quit
+		
+		$exit=true;
+		
+		$current_loc=0; $previous_loc=0; $all=0; 
+		}
+	else {
+		$exit=false;
+			
+		// pagination internal settings
+		$result = $array;
+		$limit = intval($limit_per_page);
+		$pagelink = $_SERVER['PHP_SELF']; 
 
-	
+		
 
-	$listing = intval($_GET[$queryString]);
-	$start = $listing * $limit;
+		$listing = intval($_GET[$queryString]);
+		$start = $listing * $limit;
 
-	$all = count($result);
-	$all_pages = ceil($all/$limit);
-	
-	// this forwards any criteria associated with the search by adding it onto the end of the hyperlink
-	$args="";
-	foreach ($_GET as $key=>$val) $args.= $key!=$queryString ? "&".$key."=".$val : "" ;
+		$all = count($result);
+		$all_pages = ceil($all/$limit);
+		
+		// this forwards any criteria associated with the search by adding it onto the end of the hyperlink
+		$args="";
+		foreach ($_GET as $key=>$val) $args.= $key!=$queryString ? "&".$key."=".$val : "" ;
 
-	
-	if($all>0){
+		
+
 		if(($listing+1) > $all_pages){$listing=0;}
 		$of = 0;
+	
+	
+		// below shows where in the pagination the results are
+		$current_loc 	= ($listing+1)*$limit_per_page;
+		if ($current_loc>$all) $current_loc=$all;
+		
+		$previous_loc = $listing*$limit_per_page;
+		}
+		
 		
 	////////////////////////////////////////// navigation starts ?>
-	<?php
-	
-	// below shows where in the pagination the results are
-	
-	$current_loc 	= ($listing+1)*$limit_per_page;
-	if ($current_loc>$all) $current_loc=$all;
-	
-	$previous_loc = $listing*$limit_per_page;
-	
-	?>
-	<h2 style="float:right; margin:0; padding:0; font-size:12px;"><?php echo 'Displaying '.$previous_loc.'-'.$current_loc.' of '.$all; ?></h2>
+	<h2 style="float:right; margin:0; padding:0; font-size:12px;">
+		<?php echo 'Displaying '.$previous_loc.'-'.$current_loc.' of '.$all; ?>
+	</h2>
 	<form method="post" action="">
 		<div class="tablenav">
 			<div class="alignleft">
@@ -147,7 +171,47 @@ function pagenate($array, $limit_per_page, $queryString, $rules=0, $date_sel=0, 
 					<?php } ?>
 				<?php } ?>	
 			</div>
-
+			<?php 
+			
+			/* 
+			if there where no values to display, the "$exit" value would have been set to true earlier 
+			so it continues on to display the header layouts and there options etc.
+			
+			because it also skipped the processing, (would have crashed royally) we MUST exit before output
+			
+			*/
+			if ($exit) {
+				// leave but do it pretty like
+				?>
+				<div class='tablenav-pages'>
+				
+				</div>
+				
+				<br class="clear">
+			
+				</div>
+		
+				<br class="clear">
+		
+		
+				<table class="widefat">
+					<thead>
+						<tr>
+							<th scope="row" class="check-column">&nbsp;</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr>
+							<td valign="top" style="border:0; padding:100px 0; text-align:center;">
+							<?php _e('There are no results',$ck_domain); ?>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<?php
+				return; 
+				}
+			?>
 			<div class='tablenav-pages'>		
 				<?php
 								
@@ -293,6 +357,4 @@ function pagenate($array, $limit_per_page, $queryString, $rules=0, $date_sel=0, 
 			
 		<?php ///////////////////////////////////////// navigation ends	?>
 	</form>
-	<?php
-		}
-	} ?>
+	<?php } ?>

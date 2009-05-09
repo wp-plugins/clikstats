@@ -38,7 +38,7 @@ function cs_summary() {
 	
 	
 	$location = '?page='.getCkDir().'/ck_admin.php';
-	
+
 	?>
 	<div class="wrap">
 		<h2><?php _e('Summary',$Ck_domain); ?></h2>
@@ -70,54 +70,59 @@ function cs_summary() {
 			
 			// details for yesterday only
 			case "yesterday": 
-				$arg1.="DATE_SUB(CURDATE(),INTERVAL 1 DAY) <= date AND date < DATE_SUB(CURDATE(),INTERVAL 0 DAY)";
-				$arg2.="WHERE ".$arg1;
+				$arg ="DATE_SUB(CURDATE(),INTERVAL 1 DAY) <= date AND date < DATE_SUB(CURDATE(),INTERVAL 0 DAY)";
 				$day = 'yesterday';
 				break;
 
 			// all details
 			case "all":
-				$arg1.="1=1";
+				$arg = "1=1";
 				$day = 'total';
 				break;
 				
 			// details for today only (default)	
 			default:
-				$arg1.="DATE_SUB(CURDATE(),INTERVAL 0 DAY) <= date";
+				$arg ="DATE_SUB(CURDATE(),INTERVAL 0 DAY) <= date";
 				$day = 'today';
 			}	
 		
-		// populate page details using the sql below
 		
-		$SQL= "SELECT id, url as Link, date, ip, ";		
-		$SQL.="(SELECT COUNT(id) FROM ".$table_name." WHERE LEFT(url,255)=Link AND ";
-		$SQL.=$arg1.") ";
-		$SQL.="AS Clicks ";
+		
+		
+		/*
+		
+		The Twin populating querys that set up the page content
+		They only process if switched on, which speeds up loading time by a tiny, weeny amount
+		
+		*/
+		
+				
+		// latest cliks summary 		
+		$SQL= "SELECT id, url as Link, date, ip ";		
 		$SQL.="FROM ".$table_name." ";
-		$SQL.=$arg2;
-		$SQL.="ORDER BY id DESC LIMIT 0,".intval(get_option('clikStats_last'));
-		// only process if switched on, (speeds up loading)
-		if (get_option('clikStats_last')) $latest = $wpdb->get_results($SQL, ARRAY_A);
-			
-		$SQL= "SELECT DISTINCT left(url,255) as Link, ";
-		$SQL.="(SELECT COUNT(id) FROM ".$table_name." WHERE LEFT(url,255)=Link AND ";
-		$SQL.=$arg1.") as Clicks ";
+		$SQL.="WHERE ".$arg." ";
+		$SQL.="ORDER BY id DESC LIMIT 0,".intval(get_option('clikStats_last'));	
+		if (get_option('clikStats_last')) $latest = $wpdb->get_results($SQL, ARRAY_A);	
+		
+		// most popular sumary
+		$SQL= "SELECT id, url as Link, date, ip ";		
 		$SQL.="FROM ".$table_name." ";
-		$SQL.="ORDER BY Clicks DESC LIMIT 0,".intval(get_option('clikStats_top'));
-		// only process if switched on, (speeds up loading)
 		if (get_option('clikStats_top')) $topList = $wpdb->get_results($SQL, ARRAY_A);
 		
-		$SQL= "SELECT COUNT(id) AS Count FROM ".$table_name." WHERE ".$arg1;
-		$total = $wpdb->get_results($SQL, ARRAY_A);
+
+		// get the count
+		$SQL= "SELECT COUNT(id) AS Count FROM ".$table_name." WHERE ".$arg;
+		list($total) = $wpdb->get_results($SQL, ARRAY_A);
 		
-		
+		//print_r($topList);
 		?>
 		<div style="margin-top:60px; padding:20px; border:1px solid #333333; background:#ffffff;">
 			<h3 style="margin:0; padding:0;">
-				<?php echo $total[0]['Count']; ?> Cliks <?php _e($day,$ck_domain);?>
+				<?php echo $total['Count']; ?> Cliks <?php _e($day,$ck_domain);?>
 			</h3>
 			
 			<table class="widefat" style="border:none;">
+			
 				<?php if (!empty($latest)){?>
 					<tr height="40px">
 						<td class="noBorder"></td>
@@ -138,6 +143,25 @@ function cs_summary() {
 						<th></th>
 						<th></th>
 					</tr>
+					
+					<?php 
+					
+						/*
+
+						get the count of cliks for each link 
+						
+						in version 0.6, mySql brought the server to its knees so has been
+						changed to PHP processing
+						
+						It is calculated here because we know that if we within this conditional statement
+						we have some content to count
+						
+						*/					
+						$linkz_freq = array_count_values(array_map(create_function('$val','return $val[\'Link\'];'),$latest));
+						
+						
+					?>
+							
 					<?php foreach ($latest as $last) : ?>
 					<tr>
 						<td class="noBorder"></td>
@@ -146,12 +170,48 @@ function cs_summary() {
 							&nbsp;-&nbsp;<?php addUrlAnchor($last['Link']); ?>
 						</td>
 						<td style="color:#aa0000;" class="noBorder">
-							<?php echo '('.$last['Clicks'].') Cliks'; ?>
+							<?php echo '('.$linkz_freq[$last['Link']].') Cliks'; ?>
 						</td>
 					</tr>				
 					<?php endforeach;?>
 				<?php } ?>
-				<?php if (!empty($topList)){?>
+				
+				
+				<?php if (!empty($topList)){
+				
+					/*
+
+					get the count of cliks for each link 
+					
+					in version 0.6, mySql brought the server to its knees so has been
+					changed to PHP processing
+					
+					It is calculated here because we know that if we are within this conditional statement
+					we have some content to count
+					
+					*/	
+					
+					function orderByValues($array){
+
+						$temp = array();
+						$mainReturn = array();
+						
+						// place the values within array as keys, handles duplicates
+						foreach ($array AS $key=>$val)	$temp[intval($val)][]=$key;
+						ksort($temp); // sort by keys
+
+						// re-order the array, and add the values as associative
+						foreach ($temp AS $key=>$counter) foreach ($counter AS $value) $mainReturn[] = array('Name'=>$value,'Count'=>$key);
+							
+						return $mainReturn;
+						}
+
+					
+					
+					// get the count
+					$linkz_freq = array_count_values(array_map(create_function('$val','return $val[\'Link\'];'),$topList));
+					$linkz = array_reverse(orderByValues($linkz_freq), true);
+					?>
 					<tr height="40px">
 						<td class="noBorder"></td>
 						<td class="noBorder"></td>
@@ -172,23 +232,31 @@ function cs_summary() {
 						<th></th>
 					</tr>
 
-					<?php foreach ($topList as $top) : ?>
+					<?php 
+					$x=0; foreach ($linkz AS $link){ $x++; if ($x>$cKtop) break; ?>
 						<tr>
 							<td class="noBorder"></td>
 							<td class="noBorder">
-								<?php addUrlAnchor($top['Link']);?>&nbsp;&nbsp;
+								<?php addUrlAnchor($link['Name']);?>&nbsp;&nbsp;
 							</td>
 							<td style="color:#aa0000;" class="noBorder">
-								<?php echo '('.$top['Clicks'].') Cliks'; ?>
+								<?php echo '('.$link['Count'].') Cliks'; ?>
 							</td>
 						</tr>
-					<?php endforeach; ?>
+					<?php } ?>
 				<?php } ?>
+				
+				
+				
 				<tr height="40px">
 					<td class="noBorder"></td>
 					<td class="noBorder"></td>
 					<td class="noBorder"></td>
 				</tr>
+				
+				
+				
+				
 			</table>
 		</div>
 	</div>
@@ -277,7 +345,6 @@ function cs_show() {
 	$pagArg		= $selDate['argument']; // this argument is placed into the pagenation date argument
 	
 	
-	
 	?>
 	<div class="wrap">
 		<?php
@@ -300,14 +367,42 @@ function cs_show() {
 		// process the request by setting the correct SQL and any arguments
 		switch($_GET['request']){
 			
+			// source display	
+			case 'source': 	
+				$SQL= "SELECT id as _del, date as Date, url as Url, post_id as Source, ip ";
+				$SQL.="FROM ".$table_name." ";
+				$SQL.="WHERE post_id='".mysql_real_escape_string($_GET['val'])."' ";
+				
+				// check for date clause 
+				if (isset($_GET['date_sel'])) {
+					$date = explode('-',$_GET['date_sel']);
+					$SQL.="AND MONTH(date)=".intval($date[0])." AND YEAR(date)=".intval($date[1])." ";
+					}
+				
+				$SQL.="ORDER BY id DESC";
+
+
+				// page name
+				list($post) = $wpdb->get_results('SELECT * FROM `'.$wpdb->prefix.'posts` WHERE id='.intval($_GET['val']), ARRAY_A);
+				$title = '('.$post['post_type'].' - '.$post['post_name'].') ';
+				
+				break;
+			
+			
 			// ip display	
 			case 'ip': 	
-				$SQL= "SELECT id as _del, date as Date, url as Url, ip ";
+				$SQL= "SELECT id as _del, date as Date, url as Url, post_id as Source, ip ";
 				$SQL.="FROM ".$table_name." ";
 				$SQL.="WHERE ip='".mysql_real_escape_string($_GET['val'])."' ";
+				
+				// check for date clause 
+				if (isset($_GET['date_sel'])) {
+					$date = explode('-',$_GET['date_sel']);
+					$SQL.="AND MONTH(date)=".intval($date[0])." AND YEAR(date)=".intval($date[1])." ";
+					}
+				
 				$SQL.="ORDER BY id DESC";			
 				$title = '('.$_GET['val'].') ';
-				$pagArg=0;
 				break;
 			
 			// url display
@@ -315,31 +410,43 @@ function cs_show() {
 				$reserved = array('page','request','val','stat','date_sel');
 				$url=$_GET['val'];
 				foreach ($_GET as $key=>$val) $url.= !in_array($key, $reserved, true)  ? '&'.$key.'='.$val : '';	
-				$SQL= "SELECT id as _del, date as Date, url as Url, ip ";
+				$SQL= "SELECT id as _del, date as Date, url as Url, post_id as Source, ip ";
 				$SQL.="FROM ".$table_name." ";
 				$SQL.="WHERE url='".mysql_real_escape_string($url)."' ";
+				
+				// check for date clause 
+				if (isset($_GET['date_sel'])) {
+					$date = explode('-',$_GET['date_sel']);
+					$SQL.="AND MONTH(date)=".intval($date[0])." AND YEAR(date)=".intval($date[1])." ";
+					}
+				
+				// wrap the sql up
 				$SQL.="ORDER BY id DESC";			
 				$title = '('.$_GET['val'].') ';
-				$pagArg=0;
 				break;
 
 			// date display	
 			case 'date': 
 				list($date) = explode(' ',$_GET['val']);
-				$SQL= "SELECT id as _del, date as Date, url as Url, ip ";
+				$SQL= "SELECT id as _del, date as Date, url as Url, post_id as Source, ip ";
 				$SQL.="FROM ".$table_name." ";
 				$SQL.="WHERE Date BETWEEN '".mysql_real_escape_string($date)." 00:00:01' AND ";
 				$SQL.="'".mysql_real_escape_string($date)." 23:59:59' ";
 				$SQL.="ORDER BY id DESC";
 				$title = '('.$date.') ';
-				$pagArg=0;
 				break;	
 			
 			case 'name':
 
 				// perform a search
-				$SQL= "SELECT id, url as Link, date, ip ";		
+				$SQL= "SELECT id, url as Link, date, post_id, ip ";		
 				$SQL.="FROM ".$table_name." WHERE url LIKE '%".addslashes($_GET['val'])."%'";
+				
+				// check for date clause 
+				if (isset($_GET['date_sel'])) {
+					$date = explode('-',$_GET['date_sel']);
+					$SQL.="AND MONTH(date)=".intval($date[0])." AND YEAR(date)=".intval($date[1])." ";
+					}
 				
 				$results = $wpdb->get_results($SQL, ARRAY_A);				
 				$title=stripslashes($_GET['val']);
@@ -347,13 +454,12 @@ function cs_show() {
 				
 			// standard layout, with selected date
 			default : 
-				$SQL= "SELECT id as _del, date as Date, url as Url, ip ";
+				$SQL= "SELECT id as _del, date as Date, url as Url, post_id as Source, ip ";
 				$SQL.="FROM ".$table_name." ";
 				$SQL.= $month=="99" && $year=="9999" ? "" : "WHERE MONTH(date)=".$month." AND YEAR(date)=".$year." ";
 				$SQL.="ORDER BY id DESC";
 			}
 			
-		
 		// get the page details
 		$array = $wpdb->get_results($SQL, ARRAY_A);	
 		
@@ -366,8 +472,15 @@ function cs_show() {
 		if (!empty($array)) echo '<h3>'.__('Total clicks').' '.intval(count($array)).'</h3>';
 		else echo '<h3>'.__('No stats yet',$ck_domain).'!</h3>';
 		
+		
 		// arguments for pagination
-		$args = array('ip'=>'addIpAnchor','Url'=>'addUrlAnchor','Date'=>'addDateAnchor');
+		$args = array(
+		'ip'=>'addIpAnchor',
+		'Url'=>'addUrlAnchor',
+		'Date'=>'addDateAnchor',
+		'Source'=>'addSourceAnchor'
+		);
+		
 		$maxColumns = intval(get_option("clikStats_pagenation"));
 		$maxScope 	= intval(get_option("ClikStats_pScope"));
 		
