@@ -9,7 +9,7 @@ include ('ck_functions.php');
 
 //////////////// variables ////////////////////////////////////////////
 
-$reserved = array('Ck_id','Ck_lnk'); // querys that are used
+$reserved = array('Ck_id','Ck_lnk','Ck_hsh'); // querys that are used
 $table_name = $wpdb->prefix."clik_stats"; // tablename
 $post_id = intval($_GET['Ck_id']); // supposed source of the link
 
@@ -36,6 +36,12 @@ foreach ($_GET as $key=>$val) $urlA.= !in_array($key, $reserved, true)  ? '&'.$k
 $urlB = $_GET['Ck_lnk']; 
 foreach ($_GET as $key=>$val) $urlB.= !in_array($key, $reserved, true)  ? '&amp;'.$key.'='.$val : '';
 
+# support for hash tags
+if (isset($_GET['Ck_hsh']) && $_GET['Ck_hsh']!==''){
+	$urlA = "$urlA#".$_GET['Ck_hsh'];
+	$urlB = "$urlB#".$_GET['Ck_hsh'];
+}
+
 //////////////////////////////////////////////////////////////////////
 
 
@@ -43,8 +49,6 @@ foreach ($_GET as $key=>$val) $urlB.= !in_array($key, $reserved, true)  ? '&amp;
 
 /////// security checks begin ////////////////////////////////////////
 
-
-foreach ($reserved as $required) if (empty($_GET[$required])) notFoundClik(); // bad args
 if (empty($post)) notFoundClik(); // bad post source
 if (strpos($post[0]['post_content'], 'href="'.$urlA.'"')==false && strpos($post[0]['post_content'], 'href="'.$urlB.'"')==false && !get_permalink($post_id)=='href="'.$urlA.'"' && !get_permalink($post_id)=='href="'.$urlB.'"') notFoundClik(); // bad url
 
@@ -52,6 +56,13 @@ if (strpos($post[0]['post_content'], 'href="'.$urlA.'"')==false && strpos($post[
 /////////////////////////////////////////////////////////////////////
 
 	
+/////////////////////////////////////////////////////////////////////
+// relative url fix - also fixes db entry
+if (substr($urlA, 0, 4)!=='http'){
+	$urlA = get_permalink($post_id).$urlA;
+}
+/////////////////////////////////////////////////////////////////////
+
 
 
 ///////// record the click //////////////////////////////////////////
@@ -69,11 +80,7 @@ $wpdb->query($SQL);
 ////////////////////////////////////////////////////////////////////
 
 	
-	
-	
-	
 // send them to where they originally requested
-header ('Location: '.$urlA);	
-	
+header('Location: '.$urlA);		
 	
 ?>	
